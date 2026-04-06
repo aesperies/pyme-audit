@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, CheckCircle, AlertCircle, TrendingUp, Mail, Phone, Eye, Zap, Shield, BarChart3 } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, TrendingUp, Mail, Phone, Eye, Zap, Shield, BarChart3, Download } from 'lucide-react';
 
 const AuditTool = () => {
   const [url, setUrl] = useState('');
@@ -172,6 +172,85 @@ const AuditTool = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const buildReportText = () => {
+    if (!results) return '';
+    return (
+      `=== PYME Digital Audit - Reporte ===\n\n` +
+      `URL: ${results.url}\n` +
+      `Fecha: ${results.timestamp}\n\n` +
+      `--- Puntuaciones ---\n` +
+      `AI Readiness Score: ${results.aiReadinessScore}/100\n` +
+      `Rendimiento: ${results.scores.performance}/100\n` +
+      `SEO: ${results.scores.seo}/100\n` +
+      `Accesibilidad: ${results.scores.accessibility}/100\n` +
+      `Mejores Prácticas: ${results.scores.bestPractices}/100\n` +
+      `HTTPS: ${results.isHttps ? 'Sí' : 'No'}\n\n` +
+      `--- Problemas Encontrados ---\n` +
+      (results.issues.length > 0
+        ? results.issues.map(i => `• [${i.severity}] ${i.title}`).join('\n')
+        : 'Ninguno') +
+      `\n\n--- Quick Wins ---\n` +
+      results.quickWins.map(w => `• [${w.impact}] ${w.title}: ${w.description}`).join('\n')
+    );
+  };
+
+  const handleDownloadPDF = () => {
+    if (!results) return;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html><head><title>Auditoría Digital - ${results.url}</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 40px auto; color: #1e293b; padding: 0 20px; }
+        h1 { color: #1e3a5f; border-bottom: 3px solid #1e3a5f; padding-bottom: 10px; }
+        h2 { color: #334155; margin-top: 30px; }
+        .score-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0; }
+        .score-card { border: 2px solid #e2e8f0; border-radius: 10px; padding: 16px; text-align: center; }
+        .score-card .value { font-size: 36px; font-weight: bold; }
+        .score-card .label { font-size: 14px; color: #64748b; }
+        .red { color: #ef4444; } .yellow { color: #eab308; } .green { color: #22c55e; }
+        .main-score { text-align: center; margin: 30px 0; }
+        .main-score .value { font-size: 64px; font-weight: bold; }
+        .issue { padding: 10px; margin: 8px 0; border-left: 4px solid #ef4444; background: #fef2f2; border-radius: 4px; }
+        .win { padding: 10px; margin: 8px 0; border-left: 4px solid #22c55e; background: #f0fdf4; border-radius: 4px; }
+        .badge { display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #166534; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 13px; }
+        @media print { body { margin: 20px; } }
+      </style></head><body>
+      <h1>🔍 PYME Digital Audit</h1>
+      <p><strong>URL:</strong> ${results.url}</p>
+      <p><strong>Fecha:</strong> ${results.timestamp}</p>
+      <p><strong>HTTPS:</strong> ${results.isHttps ? '✅ Activo' : '❌ No activo'}</p>
+
+      <div class="main-score">
+        <div class="value ${results.aiReadinessScore < 50 ? 'red' : results.aiReadinessScore < 80 ? 'yellow' : 'green'}">${results.aiReadinessScore}</div>
+        <div style="font-size:18px;color:#64748b;">Puntuación de Preparación IA (sobre 100)</div>
+      </div>
+
+      <h2>Puntuaciones por Categoría</h2>
+      <div class="score-grid">
+        <div class="score-card"><div class="value ${results.scores.performance < 50 ? 'red' : results.scores.performance < 80 ? 'yellow' : 'green'}">${results.scores.performance}</div><div class="label">Rendimiento</div></div>
+        <div class="score-card"><div class="value ${results.scores.seo < 50 ? 'red' : results.scores.seo < 80 ? 'yellow' : 'green'}">${results.scores.seo}</div><div class="label">SEO</div></div>
+        <div class="score-card"><div class="value ${results.scores.accessibility < 50 ? 'red' : results.scores.accessibility < 80 ? 'yellow' : 'green'}">${results.scores.accessibility}</div><div class="label">Accesibilidad</div></div>
+        <div class="score-card"><div class="value ${results.scores.bestPractices < 50 ? 'red' : results.scores.bestPractices < 80 ? 'yellow' : 'green'}">${results.scores.bestPractices}</div><div class="label">Mejores Prácticas</div></div>
+      </div>
+
+      ${results.issues.length > 0 ? `<h2>⚠️ Problemas Encontrados</h2>${results.issues.map(i => `<div class="issue"><strong>${i.title}</strong><br/><small>${i.description}</small></div>`).join('')}` : ''}
+
+      <h2>🚀 Quick Wins - Mejoras Rápidas</h2>
+      ${results.quickWins.map(w => `<div class="win"><strong>${w.title}</strong> <span class="badge">${w.impact}</span><br/><small>${w.description}</small></div>`).join('')}
+
+      <div class="footer">
+        <p><strong>¿Quieres implementar estas mejoras?</strong></p>
+        <p>Agenda una llamada gratuita de 15 minutos: antonio@delaesperanza.com</p>
+        <p style="margin-top:10px;">Generado por PYME Digital Audit | pyme-audit.vercel.app</p>
+      </div>
+      </body></html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 500);
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.email) {
@@ -179,14 +258,12 @@ const AuditTool = () => {
       return;
     }
 
-    // Send lead data to your backend or email service
-    // For now, we use a simple mailto fallback + Formspree/Getform integration
-    // Replace YOUR_FORM_ID with your actual Formspree form ID when ready
+    const reportData = buildReportText();
+
     try {
       const formEndpoint = import.meta.env.VITE_FORM_ENDPOINT;
 
       if (formEndpoint) {
-        // If you have a form endpoint configured (Formspree, Getform, etc.)
         await fetch(formEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -196,21 +273,24 @@ const AuditTool = () => {
             telefono: formData.telefono,
             url_analizada: formData.url,
             ai_readiness_score: results?.aiReadinessScore,
+            rendimiento: results?.scores?.performance,
+            seo: results?.scores?.seo,
+            accesibilidad: results?.scores?.accessibility,
+            mejores_practicas: results?.scores?.bestPractices,
+            problemas: results?.issues?.map(i => `[${i.severity}] ${i.title}`).join('; '),
             timestamp: new Date().toISOString()
           })
         });
       } else {
-        // Fallback: open mailto with the data
         const subject = encodeURIComponent(`Nuevo lead: ${formData.nombre} - Score ${results?.aiReadinessScore}/100`);
         const body = encodeURIComponent(
+          `--- DATOS DEL LEAD ---\n` +
           `Nombre: ${formData.nombre}\n` +
           `Email: ${formData.email}\n` +
-          `Teléfono: ${formData.telefono}\n` +
-          `URL: ${formData.url}\n` +
-          `AI Score: ${results?.aiReadinessScore}/100\n` +
-          `Fecha: ${new Date().toLocaleString('es-ES')}`
+          `Teléfono: ${formData.telefono}\n\n` +
+          reportData
         );
-        window.open(`mailto:antonio@bitkraft.vc?subject=${subject}&body=${body}`, '_blank');
+        window.open(`mailto:antonio@delaesperanza.com?subject=${subject}&body=${body}`, '_blank');
       }
     } catch (err) {
       console.error('Form submission error:', err);
@@ -365,6 +445,14 @@ const AuditTool = () => {
                   <span>SSL/HTTPS activo</span>
                 </div>
               )}
+
+              <button
+                onClick={handleDownloadPDF}
+                className="mt-6 px-6 py-3 bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-800 hover:to-slate-700 text-white font-semibold rounded-lg flex items-center gap-2 mx-auto transition-all shadow-lg"
+              >
+                <Download className="w-5 h-5" />
+                Descargar Reporte PDF
+              </button>
             </div>
           </div>
 
