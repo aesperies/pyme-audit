@@ -45,14 +45,25 @@ const AuditTool = () => {
     const normalizedUrl = normalizeUrl(url);
 
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(normalizedUrl)}&category=performance&category=seo&category=accessibility&category=best-practices&strategy=mobile`,
-        { method: 'GET' }
-      );
+      const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(normalizedUrl)}&category=performance&category=seo&category=accessibility&category=best-practices&strategy=mobile`;
+
+      let response;
+      let retries = 0;
+      const maxRetries = 2;
+
+      while (retries <= maxRetries) {
+        response = await fetch(apiUrl, { method: 'GET' });
+        if (response.status === 429 && retries < maxRetries) {
+          retries++;
+          await new Promise(r => setTimeout(r, 3000 * retries));
+          continue;
+        }
+        break;
+      }
 
       if (!response.ok) {
         if (response.status === 429) {
-          throw new Error('Demasiadas solicitudes. Espera un momento y vuelve a intentarlo.');
+          throw new Error('El servicio está ocupado. Espera 30 segundos y vuelve a intentarlo.');
         }
         const errorData = await response.json().catch(() => ({}));
         const errorMsg = errorData?.error?.message || 'No pudimos analizar este sitio. Verifica la URL.';
