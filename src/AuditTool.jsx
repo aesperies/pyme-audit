@@ -51,7 +51,12 @@ const AuditTool = () => {
       );
 
       if (!response.ok) {
-        throw new Error('No pudimos analizar este sitio. Verifica la URL.');
+        if (response.status === 429) {
+          throw new Error('Demasiadas solicitudes. Espera un momento y vuelve a intentarlo.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData?.error?.message || 'No pudimos analizar este sitio. Verifica la URL.';
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
