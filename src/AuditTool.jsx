@@ -45,17 +45,19 @@ const AuditTool = () => {
     const normalizedUrl = normalizeUrl(url);
 
     try {
-      const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(normalizedUrl)}&category=performance&category=seo&category=accessibility&category=best-practices&strategy=mobile`;
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+      const keyParam = apiKey ? `&key=${apiKey}` : '';
+      const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(normalizedUrl)}&category=performance&category=seo&category=accessibility&category=best-practices&strategy=mobile${keyParam}`;
 
       let response;
       let retries = 0;
-      const maxRetries = 2;
+      const maxRetries = 3;
 
       while (retries <= maxRetries) {
         response = await fetch(apiUrl, { method: 'GET' });
         if (response.status === 429 && retries < maxRetries) {
           retries++;
-          await new Promise(r => setTimeout(r, 3000 * retries));
+          await new Promise(r => setTimeout(r, 5000 * retries));
           continue;
         }
         break;
@@ -63,7 +65,7 @@ const AuditTool = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
-          throw new Error('El servicio está ocupado. Espera 30 segundos y vuelve a intentarlo.');
+          throw new Error('Demasiadas solicitudes. Espera 1 minuto antes de intentar de nuevo. Si este error persiste, contacta con nosotros.');
         }
         const errorData = await response.json().catch(() => ({}));
         const errorMsg = errorData?.error?.message || 'No pudimos analizar este sitio. Verifica la URL.';
