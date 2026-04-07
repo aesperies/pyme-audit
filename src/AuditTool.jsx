@@ -95,21 +95,42 @@ const AuditTool = () => {
       const audits = lighthouse.audits || {};
       const issues = [];
 
-      const criticalAudits = [
-        'largest-contentful-paint',
-        'cumulative-layout-shift',
-        'first-input-delay',
-        'meta-description',
-        'robots-txt',
-        'color-contrast'
-      ];
+      const auditTranslations = {
+        'largest-contentful-paint': {
+          title: 'Carga del contenido principal (LCP)',
+          description: 'El elemento más grande de la página tarda demasiado en aparecer. Esto afecta la experiencia del usuario y el posicionamiento en Google.'
+        },
+        'cumulative-layout-shift': {
+          title: 'Estabilidad visual (CLS)',
+          description: 'Los elementos de la página se mueven mientras carga, causando clics accidentales y mala experiencia de usuario.'
+        },
+        'first-input-delay': {
+          title: 'Tiempo de respuesta a interacción (FID)',
+          description: 'La página tarda en responder cuando el usuario hace clic o toca. Esto frustra a los visitantes y aumenta la tasa de rebote.'
+        },
+        'meta-description': {
+          title: 'Meta descripción ausente',
+          description: 'Tu página no tiene meta descripción. Esto afecta cómo apareces en Google y en respuestas de IA como ChatGPT.'
+        },
+        'robots-txt': {
+          title: 'Archivo robots.txt',
+          description: 'No se encontró un archivo robots.txt válido. Los buscadores e IAs necesitan este archivo para indexar tu sitio correctamente.'
+        },
+        'color-contrast': {
+          title: 'Contraste de colores insuficiente',
+          description: 'El texto no tiene suficiente contraste con el fondo. Esto dificulta la lectura y reduce la accesibilidad de tu web.'
+        }
+      };
+
+      const criticalAudits = Object.keys(auditTranslations);
 
       criticalAudits.forEach((auditId) => {
         const audit = audits[auditId];
         if (audit && audit.score < 0.8) {
+          const translation = auditTranslations[auditId];
           issues.push({
-            title: audit.title || auditId,
-            description: audit.description || '',
+            title: translation.title,
+            description: translation.description,
             severity: audit.score < 0.5 ? 'critical' : 'warning'
           });
         }
@@ -278,6 +299,8 @@ const AuditTool = () => {
             accesibilidad: results?.scores?.accessibility,
             mejores_practicas: results?.scores?.bestPractices,
             problemas: results?.issues?.map(i => `[${i.severity}] ${i.title}`).join('; '),
+            quick_wins: results?.quickWins?.map(w => `[${w.impact}] ${w.title}`).join('; '),
+            https_activo: results?.isHttps ? 'Sí' : 'No',
             timestamp: new Date().toISOString()
           })
         });
